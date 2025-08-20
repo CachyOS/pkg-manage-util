@@ -1,0 +1,34 @@
+[package]
+name = "pkg-manage-util"
+version = "0.1.0"
+authors = ["Vladislav Nepogodin <vnepogodin@cachyos.org>"]
+edition = "2024"
+description = "A command-line utility for managing pacman package builds"
+license = "GPL-3.0-or-later"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { version = "1", default-features = false, features = ["std"] }
+clap = { version = "4.5", features = ["derive"] }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter"] }
+git2 = { version = "0.19", default-features = false, features = ["https", "vendored-libgit2"] }
+tokio = { version = "1.45", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["io-util"] }
+nix = { version = "0.30", features = ["signal", "process", "time", "feature"] }
+uuid = { version = "1.17", features = ["v4"], default-features = false }
+tempfile = { version = "3.20", default-features = false }
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+xdg = "2.5"
+
+[lib]
+crate-type = ["rlib"]
+
+[profile.release]
+strip = "symbols"
+panic = "abort"
+lto = true
+opt-level = 3
+codegen-units = 1
