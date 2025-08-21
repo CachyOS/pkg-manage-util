@@ -19,6 +19,15 @@ cd pkg-manage-util
 cargo install --path .
 ```
 
+## Setup
+
+Before you can start building packages with the default configuration, you need to prepare working directories. Run the following commands to create the necessary directories and set the correct permissions:
+
+```bash
+sudo mkdir -p /var/lib/pkg-manage-util/chroots
+sudo chown $USER -R /var/lib/pkg-manage-util
+```
+
 ## Usage
 
 ### Clone a package from Arch Linux repositories
