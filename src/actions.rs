@@ -99,7 +99,7 @@ pub fn clone_arch_repo(config: &Config, args: &ArchCloneCli) -> Result<()> {
 pub fn clone_git_repo(config: &Config, args: &GitCloneCli) -> Result<()> {
     git_utils::git_repo_clone(
         &args.git_url,
-        args.depth.clone(),
+        args.depth,
         args.branch.clone(),
         args.dest_path.to_str().unwrap(),
         config.proxy_url(),

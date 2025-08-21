@@ -98,8 +98,8 @@ impl Config {
             chroot_dir: Some(self.chroot_dir()),
             makepkgconf_path: Some(self.makepkgconf_path()),
             pacmanconf_path: Some(self.pacmanconf_path()),
-            build_config: self.build_config.as_ref().and_then(|x| Some(x.actual_config())),
-            git_config: self.git_config.as_ref().and_then(|x| Some(x.actual_config())),
+            build_config: self.build_config.as_ref().map(|x| x.actual_config()),
+            git_config: self.git_config.as_ref().map(|x| x.actual_config()),
         };
         let toml_content = toml::to_string(&actual_config)?;
         Ok(toml_content)

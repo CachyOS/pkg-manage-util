@@ -35,7 +35,7 @@ impl BuildConfig {
     }
 
     pub fn timeout(&self) -> Option<u64> {
-        self.timeout.clone()
+        self.timeout
     }
 
     pub fn actual_config(&self) -> Self {
