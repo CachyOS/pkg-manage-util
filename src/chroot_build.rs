@@ -259,7 +259,12 @@ pub fn setup_chroot(
     };
 
     if !Path::new(&chroot_params.chroot_root_path).exists() {
-        fs::create_dir_all(chroot_parent).context("failed to create chroot parent dir")?;
+        fs::create_dir_all(chroot_parent).map_err(|err| {
+            anyhow::anyhow!(
+                "failed to create chroot parent dir '{chroot_parent}': {err}. Please create it \
+                 and make it owned by the current user",
+            )
+        })?;
 
         // 1. run mkarchroot to create root chroot
         let mkarchroot_args = construct_mkarchroot_args(&chroot_params);
