@@ -233,11 +233,11 @@ fn do_merge<'a>(
     Ok(())
 }
 
-pub fn git_repo_clone(
+pub fn git_repo_clone<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_depth: Option<i32>,
     repo_branch: Option<String>,
-    repo_path: &str,
+    repo_path: PathLike,
     proxy_url: Option<String>,
 ) -> Result<()> {
     #[cfg(debug_assertions)]
@@ -288,34 +288,34 @@ pub fn git_repo_clone(
     if let Some(repo_branch) = repo_branch {
         repo_builder.branch(&repo_branch);
     }
-    repo_builder.clone(repo_url, Path::new(&repo_path))?;
+    repo_builder.clone(repo_url, repo_path.as_ref())?;
     // if let Err(clone_error) = repo_builder.clone(&repo_url, Path::new(&repo_path)) {
     //    println!("clone {:?}", clone_error.class());
     //}
     Ok(())
 }
 
-pub fn git_repo_clone_tag(
+pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_tag: &str,
-    repo_path: &str,
+    repo_path: PathLike,
     proxy_url: Option<String>,
 ) -> Result<()> {
-    git_repo_clone(repo_url, None, None, repo_path, proxy_url)?;
+    git_repo_clone(repo_url, None, None, repo_path.as_ref(), proxy_url)?;
     git_repo_checkout(repo_path, repo_tag)?;
 
     Ok(())
 }
 
-pub fn git_repo_pull(
-    repo_path: &str,
+pub fn git_repo_pull<PathLike: AsRef<Path>>(
+    repo_path: PathLike,
     remote_name: Option<String>,
     remote_branch: Option<String>,
     proxy_url: Option<String>,
 ) -> Result<()> {
     let remote_name = remote_name.as_ref().map(|s| &s[..]).unwrap_or("origin");
 
-    let repo = Repository::open(repo_path)?;
+    let repo = Repository::open(repo_path.as_ref())?;
     let mut remote = repo.find_remote(remote_name)?;
     let mut was_none_branch = true;
     let remote_branch = if let Some(remote_branch) = remote_branch {
@@ -337,15 +337,15 @@ pub fn git_repo_pull(
     Ok(())
 }
 
-pub fn git_repo_pull_tag(
-    repo_path: &str,
+pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
+    repo_path: PathLike,
     remote_name: Option<String>,
     remote_tag: &str,
     proxy_url: Option<String>,
 ) -> Result<()> {
     let remote_name = remote_name.as_ref().map(|s| &s[..]).unwrap_or("origin");
 
-    let repo = Repository::open(repo_path)?;
+    let repo = Repository::open(repo_path.as_ref())?;
     let mut remote = repo.find_remote(remote_name)?;
 
     let fetch_commit = do_fetch(&repo, &[], &mut remote, proxy_url.as_deref())?;
@@ -361,7 +361,7 @@ pub fn git_repo_pull_tag(
     Ok(())
 }
 
-pub fn git_repo_checkout(repo_path: &str, ref_name: &str) -> Result<()> {
+pub fn git_repo_checkout<PathLike: AsRef<Path>>(repo_path: PathLike, ref_name: &str) -> Result<()> {
     let repo = Repository::open(repo_path)?;
     let refer = repo.resolve_reference_from_short_name(ref_name)?;
     let obj = refer.peel(git2::ObjectType::Any)?;
