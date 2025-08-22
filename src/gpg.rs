@@ -14,12 +14,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use anyhow::{Context, Result};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
-pub fn create_detached_signature(filepath: &str) -> Result<()> {
+use anyhow::{Context, Result};
+
+pub fn create_detached_signature<PathLike: AsRef<Path>>(filepath: PathLike) -> Result<()> {
     let cmd = Command::new("/sbin/gpg")
-        .args(["--batch", "--detach-sign", filepath])
+        .args(["--batch", "--detach-sign", filepath.as_ref().to_str().unwrap()])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -33,7 +35,8 @@ pub fn create_detached_signature(filepath: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn verify_gpg_signature(filepath: &str, name: &str) -> Result<()> {
+pub fn verify_gpg_signature<PathLike: AsRef<Path>>(filepath: PathLike, name: &str) -> Result<()> {
+    let filepath = filepath.as_ref().to_str().unwrap();
     let gpg_sign = format!("{filepath}.sig");
     let output = Command::new("/sbin/gpg")
         .args(["--verify", &gpg_sign])
