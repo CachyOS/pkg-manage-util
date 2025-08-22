@@ -19,9 +19,21 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
 
-pub fn create_detached_signature<PathLike: AsRef<Path>>(filepath: PathLike) -> Result<()> {
+pub fn create_detached_signature<PathLike: AsRef<Path>>(
+    filepath: PathLike,
+    sign_key: Option<String>,
+) -> Result<()> {
+    // construct args for gpg
+    let mut gpg_args: Vec<&str> = vec!["--batch", "--detach-sign"];
+
+    if let Some(sign_key) = &sign_key {
+        gpg_args.extend_from_slice(&["-u", &sign_key]);
+    }
+    gpg_args.push(filepath.as_ref().to_str().unwrap());
+    println!("FUCK: gpg args := '{gpg_args:?}'");
+
     let cmd = Command::new("/sbin/gpg")
-        .args(["--batch", "--detach-sign", filepath.as_ref().to_str().unwrap()])
+        .args(&gpg_args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
