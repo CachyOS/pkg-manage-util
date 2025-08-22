@@ -43,13 +43,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     proxy_url: Option<String>,
 ) -> Result<()> {
     let repo_url_str = convert_archrepo_url(repo_url);
-    git_utils::git_repo_clone(
-        &repo_url_str,
-        repo_depth,
-        repo_branch.clone(),
-        repo_path.as_ref().to_str().unwrap(),
-        proxy_url,
-    )
+    git_utils::git_repo_clone(&repo_url_str, repo_depth, repo_branch.clone(), repo_path, proxy_url)
 }
 
 pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
@@ -59,12 +53,7 @@ pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     proxy_url: Option<String>,
 ) -> Result<()> {
     let repo_url_str = convert_archrepo_url(repo_url);
-    git_utils::git_repo_clone_tag(
-        &repo_url_str,
-        repo_tag,
-        repo_path.as_ref().to_str().unwrap(),
-        proxy_url,
-    )
+    git_utils::git_repo_clone_tag(&repo_url_str, repo_tag, repo_path, proxy_url)
 }
 
 pub fn git_repo_pull<PathLike: AsRef<Path>>(
@@ -73,12 +62,7 @@ pub fn git_repo_pull<PathLike: AsRef<Path>>(
     remote_branch: Option<String>,
     proxy_url: Option<String>,
 ) -> Result<()> {
-    git_utils::git_repo_pull(
-        repo_path.as_ref().to_str().unwrap(),
-        remote_name.clone(),
-        remote_branch.clone(),
-        proxy_url,
-    )
+    git_utils::git_repo_pull(repo_path, remote_name.clone(), remote_branch.clone(), proxy_url)
 }
 
 pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
@@ -87,10 +71,5 @@ pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
     remote_tag: &str,
     proxy_url: Option<String>,
 ) -> Result<()> {
-    git_utils::git_repo_pull_tag(
-        repo_path.as_ref().to_str().unwrap(),
-        remote_name.clone(),
-        remote_tag,
-        proxy_url,
-    )
+    git_utils::git_repo_pull_tag(repo_path, remote_name.clone(), remote_tag, proxy_url)
 }
