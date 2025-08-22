@@ -101,7 +101,7 @@ pub fn clone_git_repo(config: &Config, args: &GitCloneCli) -> Result<()> {
         &args.git_url,
         args.depth,
         args.branch.clone(),
-        args.dest_path.to_str().unwrap(),
+        &args.dest_path,
         config.proxy_url(),
     )?;
 
