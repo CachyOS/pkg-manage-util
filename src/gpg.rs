@@ -30,7 +30,6 @@ pub fn create_detached_signature<PathLike: AsRef<Path>>(
         gpg_args.extend_from_slice(&["-u", &sign_key]);
     }
     gpg_args.push(filepath.as_ref().to_str().unwrap());
-    println!("FUCK: gpg args := '{gpg_args:?}'");
 
     let cmd = Command::new("/sbin/gpg")
         .args(&gpg_args)
