@@ -41,6 +41,9 @@ fn main() -> Result<()> {
         Commands::CloneArchRepo(args) => {
             actions::clone_arch_repo(&config, args)?;
         },
+        Commands::CloneAurRepo(args) => {
+            actions::clone_aur_repo(&config, args)?;
+        },
         Commands::CloneGitRepo(args) => {
             actions::clone_git_repo(&config, args)?;
         },

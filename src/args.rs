@@ -35,6 +35,16 @@ pub struct ArchCloneCli {
 }
 
 #[derive(Parser, PartialEq, Debug)]
+pub struct AurCloneCli {
+    /// The package to clone
+    pub pkgbase: String,
+
+    /// The depth of repo to clone
+    #[arg(long)]
+    pub depth: Option<i32>,
+}
+
+#[derive(Parser, PartialEq, Debug)]
 pub struct GitCloneCli {
     /// The repo url to clone
     pub git_url: String,
@@ -62,6 +72,9 @@ pub enum Commands {
     /// Clones Archlinux repository
     #[command(arg_required_else_help = true)]
     CloneArchRepo(ArchCloneCli),
+    /// Clones AUR repository
+    #[command(arg_required_else_help = true)]
+    CloneAurRepo(AurCloneCli),
     /// Clones git repository
     #[command(arg_required_else_help = true)]
     CloneGitRepo(GitCloneCli),

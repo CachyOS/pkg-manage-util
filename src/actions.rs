@@ -14,7 +14,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use crate::args::{ArchCloneCli, BuildCli, GitCloneCli};
+use crate::args::{ArchCloneCli, AurCloneCli, BuildCli, GitCloneCli};
 use crate::config::Config;
 
 use pkg_manage_util::{chroot_build, git_utils};
@@ -90,6 +90,22 @@ pub fn clone_arch_repo(config: &Config, args: &ArchCloneCli) -> Result<()> {
         &args.pkgbase,
         args.version.as_deref().unwrap_or("main"),
         &dest_path,
+        config.proxy_url(),
+    )?;
+
+    Ok(())
+}
+
+pub fn clone_aur_repo(config: &Config, args: &AurCloneCli) -> Result<()> {
+    let current_dir = env::current_dir().context("failed to get current dir")?;
+    let dest_path = current_dir.join(&args.pkgbase);
+
+    let git_url = format!("https://aur.archlinux.org/{}.git", args.pkgbase);
+    git_utils::git_repo_clone(
+        &git_url,
+        args.depth,
+        None,
+        dest_path.to_str().unwrap(),
         config.proxy_url(),
     )?;
 
