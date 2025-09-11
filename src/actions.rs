@@ -105,7 +105,8 @@ pub fn clone_aur_repo(config: &Config, args: &AurCloneCli) -> Result<()> {
         &git_url,
         args.depth,
         None,
-        dest_path.to_str().unwrap(),
+        &dest_path,
+        false,
         config.proxy_url(),
     )?;
 
@@ -118,6 +119,7 @@ pub fn clone_git_repo(config: &Config, args: &GitCloneCli) -> Result<()> {
         args.depth,
         args.branch.clone(),
         &args.dest_path,
+        args.single_branch,
         config.proxy_url(),
     )?;
 

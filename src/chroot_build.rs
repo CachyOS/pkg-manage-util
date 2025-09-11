@@ -334,7 +334,7 @@ pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
             format!("https://gitlab.archlinux.org/archlinux/packaging/packages/{pkgbase}.git");
 
         // simple clone
-        archgit_utils::git_repo_clone(&git_url, None, None, &dest_path, proxy_url)
+        archgit_utils::git_repo_clone(&git_url, None, None, &dest_path, false, proxy_url)
             .context("failed to clone repo")?;
 
         // double check

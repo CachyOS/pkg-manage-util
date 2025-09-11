@@ -59,6 +59,10 @@ pub struct GitCloneCli {
     /// The repo branch to clone
     #[arg(short, long)]
     pub branch: Option<String>,
+
+    /// The flag used to clone single branch remote
+    #[arg(long)]
+    pub single_branch: bool,
 }
 
 #[derive(Parser, PartialEq, Debug)]

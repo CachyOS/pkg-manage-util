@@ -238,6 +238,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     repo_depth: Option<i32>,
     repo_branch: Option<String>,
     repo_path: PathLike,
+    single_branch: bool,
     proxy_url: Option<String>,
 ) -> Result<()> {
     #[cfg(debug_assertions)]
@@ -287,6 +288,12 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     // TODO(vnepogodin): add proxy on the 429 code
     if let Some(repo_branch) = repo_branch {
         repo_builder.branch(&repo_branch);
+
+        if single_branch {
+            let refspec = format!("+refs/heads/{0:}:refs/remotes/origin/{0:}", &repo_branch);
+            repo_builder
+                .remote_create(move |repo, name, url| repo.remote_with_fetch(name, url, &refspec));
+        }
     }
     repo_builder.clone(repo_url, repo_path.as_ref())?;
     // if let Err(clone_error) = repo_builder.clone(&repo_url, Path::new(&repo_path)) {
@@ -299,9 +306,10 @@ pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_tag: &str,
     repo_path: PathLike,
+    single_branch: bool,
     proxy_url: Option<String>,
 ) -> Result<()> {
-    git_repo_clone(repo_url, None, None, repo_path.as_ref(), proxy_url)?;
+    git_repo_clone(repo_url, None, None, repo_path.as_ref(), single_branch, proxy_url)?;
     git_repo_checkout(repo_path, repo_tag)?;
 
     Ok(())
