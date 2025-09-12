@@ -38,10 +38,16 @@ pub fn dump_config(config: &Config) -> Result<()> {
 
 pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
     let chroot_dir = config.chroot_dir();
-    let makepkgconf_path = config.makepkgconf_path();
     let pacmanconf_path = config.pacmanconf_path();
     let build_paccachedir = config.build_paccachedir();
     let timeout = config.timeout();
+
+    // if user provided config, overwrite config one
+    let makepkgconf_path = if let Some(makepkg_conf) = &args.makepkg_conf {
+        makepkg_conf.clone()
+    } else {
+        config.makepkgconf_path()
+    };
 
     // setup temp chroot
     chroot_build::setup_chroot(

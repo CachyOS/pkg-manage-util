@@ -69,6 +69,10 @@ pub struct GitCloneCli {
 pub struct BuildCli {
     /// The path to the PKGBUILD file
     pub pkgbuild_path: Option<PathBuf>,
+
+    /// The path to the makepkg.conf file
+    #[arg(long)]
+    pub makepkg_conf: Option<PathBuf>,
 }
 
 #[derive(Subcommand, PartialEq, Debug)]
