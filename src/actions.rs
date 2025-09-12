@@ -38,7 +38,6 @@ pub fn dump_config(config: &Config) -> Result<()> {
 
 pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
     let chroot_dir = config.chroot_dir();
-    let pacmanconf_path = config.pacmanconf_path();
     let build_paccachedir = config.build_paccachedir();
     let timeout = config.timeout();
 
@@ -47,6 +46,11 @@ pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
         makepkg_conf.clone()
     } else {
         config.makepkgconf_path()
+    };
+    let pacmanconf_path = if let Some(pacman_conf) = &args.pacman_conf {
+        pacman_conf.clone()
+    } else {
+        config.pacmanconf_path()
     };
 
     // setup temp chroot

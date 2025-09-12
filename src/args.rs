@@ -73,6 +73,10 @@ pub struct BuildCli {
     /// The path to the makepkg.conf file
     #[arg(long)]
     pub makepkg_conf: Option<PathBuf>,
+
+    /// The path to the pacman.conf file
+    #[arg(long)]
+    pub pacman_conf: Option<PathBuf>,
 }
 
 #[derive(Subcommand, PartialEq, Debug)]
