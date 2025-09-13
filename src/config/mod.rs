@@ -36,10 +36,8 @@ impl Config {
     pub fn load() -> Self {
         let mut config = Self::default();
         let config_paths = [
-            xdg::BaseDirectories::with_prefix("pkg-manage-util")
-                .ok()
-                .map(|p| p.get_config_file("config.toml")),
-            xdg::BaseDirectories::new().ok().map(|p| p.get_config_file("pkg-manage-util.toml")),
+            xdg::BaseDirectories::with_prefix("pkg-manage-util").get_config_file("config.toml"),
+            xdg::BaseDirectories::new().get_config_file("pkg-manage-util.toml"),
         ];
         for check_path in config_paths.into_iter().flatten() {
             if let Ok(config_file) = Self::parse_from_file(&check_path) {
