@@ -82,7 +82,7 @@ pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
         timeout: timeout.map(Duration::from_secs),
     };
 
-    let result = chroot_build::build_package(build_params);
+    let result = chroot_build::build_package(build_params, None);
 
     // cleanup temp chroot
     chroot_build::clean_chroot_dir(chroot_dir.to_str().unwrap());

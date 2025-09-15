@@ -14,6 +14,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use crate::subproc::ChildrenCheckValidator;
 use crate::{archgit_utils, subproc};
 
 use std::path::Path;
@@ -175,7 +176,10 @@ fn construct_buildpkgcmd_args(build_params: &BuildParams) -> Vec<String> {
 /// This function executes `makechrootpkg` to build a package specified by the given PKGBUILD path
 /// within a chroot environment. It utilizes `sudo` to run the build command with appropriate
 /// environment variables and arguments.
-pub fn build_package(build_params: BuildParams) -> BuildResult {
+pub fn build_package(
+    build_params: BuildParams,
+    validator: Option<ChildrenCheckValidator>,
+) -> BuildResult {
     let args = construct_buildpkgcmd_args(&build_params);
     debug!("running build := '{args:?}'");
 
@@ -185,8 +189,14 @@ pub fn build_package(build_params: BuildParams) -> BuildResult {
     debug!("Running in '{pkgbuild_parent}'...");
 
     let mut log: Vec<u8> = vec![];
-    let res =
-        subproc::exec_proc("sudo", &args, pkgbuild_parent, &mut log, build_params.timeout, None);
+    let res = subproc::exec_proc(
+        "sudo",
+        &args,
+        pkgbuild_parent,
+        &mut log,
+        build_params.timeout,
+        validator,
+    );
 
     let build_log = String::from_utf8_lossy(&log).to_string();
     if let Err(err) = &res {
