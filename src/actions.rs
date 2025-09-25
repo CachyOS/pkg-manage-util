@@ -114,6 +114,10 @@ pub fn clone_aur_repo(config: &Config, args: &AurCloneCli) -> Result<()> {
     let current_dir = env::current_dir().context("failed to get current dir")?;
     let dest_path = current_dir.join(&args.pkgbase);
 
+    if dest_path.exists() {
+        anyhow::bail!("Destination path cannot be existing git repository");
+    }
+
     let git_url = format!("https://aur.archlinux.org/{}.git", args.pkgbase);
     let res = git_utils::git_repo_clone(
         &git_url,
@@ -131,6 +135,8 @@ pub fn clone_aur_repo(config: &Config, args: &AurCloneCli) -> Result<()> {
              mirror",
             args.pkgbase
         );
+    } else {
+        return Ok(());
     }
 
     // fetch and clone just single remote
