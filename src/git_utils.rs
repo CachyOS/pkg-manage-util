@@ -14,13 +14,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-use std::cell::RefCell;
-use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::Result;
 use git2::build::{CheckoutBuilder, RepoBuilder};
-use git2::{FetchOptions, Progress, ProxyOptions, RemoteCallbacks, Repository};
+use git2::{FetchOptions, ProxyOptions, RemoteCallbacks, Repository};
+
+#[cfg(debug_assertions)]
+use {
+    git2::Progress,
+    std::cell::RefCell,
+    std::io::{self, Write},
+    std::path::PathBuf,
+};
 
 #[cfg(debug_assertions)]
 struct State {
