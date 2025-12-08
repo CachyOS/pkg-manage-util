@@ -17,17 +17,13 @@
 use crate::args::{ArchCloneCli, AurCloneCli, BuildCli, GitCloneCli};
 use crate::config::Config;
 
-use pkg_manage_util::{chroot_build, git_utils};
+use pkg_manage_util::{aur, chroot_build, git_utils};
 
 use std::env;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use tracing::error;
 use uuid::Uuid;
-
-/// AUR Github mirror. used in case of an accident
-const AUR_MIRROR_URL: &str = "https://github.com/archlinux/aur.git";
 
 pub fn dump_config(config: &Config) -> Result<()> {
     let config_dump = config.dump_config()?;
@@ -114,42 +110,7 @@ pub fn clone_aur_repo(config: &Config, args: &AurCloneCli) -> Result<()> {
     let current_dir = env::current_dir().context("failed to get current dir")?;
     let dest_path = current_dir.join(&args.pkgbase);
 
-    if dest_path.exists() {
-        anyhow::bail!("Destination path cannot be existing git repository");
-    }
-
-    let git_url = format!("https://aur.archlinux.org/{}.git", args.pkgbase);
-    let res = git_utils::git_repo_clone(
-        &git_url,
-        args.depth,
-        None,
-        &dest_path,
-        false,
-        config.proxy_url(),
-    );
-
-    // fallback to AUR Github mirror
-    if let Err(clone_err) = res {
-        error!(
-            "Failed to clone package {} from AUR with error '{clone_err}'! Falling back to Github \
-             mirror",
-            args.pkgbase
-        );
-    } else {
-        return Ok(());
-    }
-
-    // fetch and clone just single remote
-    git_utils::git_repo_clone(
-        AUR_MIRROR_URL,
-        None,
-        Some(args.pkgbase.clone()),
-        &dest_path,
-        true,
-        config.proxy_url(),
-    )?;
-
-    Ok(())
+    aur::clone_repo(&args.pkgbase, dest_path, args.depth, config.proxy_url())
 }
 
 pub fn clone_git_repo(config: &Config, args: &GitCloneCli) -> Result<()> {

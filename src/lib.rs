@@ -15,6 +15,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 pub mod archgit_utils;
+pub mod aur;
 pub mod chroot_build;
 pub mod git_utils;
 pub mod gpg;
