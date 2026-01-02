@@ -60,12 +60,12 @@ pub fn exec_cmd(
     work_dir: Option<String>,
     is_stderr: bool,
 ) -> Result<ExecStatus> {
-    // fallback to current dir in case nullopt was provided
-    let work_dir = if work_dir.is_none() {
+    // fallback to current dir in case None was provided
+    let work_dir = if let Some(dir) = work_dir {
+        dir
+    } else {
         let current_dir = env::current_dir().context("failed to get CWD")?;
         current_dir.as_path().to_str().unwrap().to_owned()
-    } else {
-        work_dir.unwrap()
     };
 
     let mut child = Command::new(bin);
@@ -120,13 +120,13 @@ pub fn exec_proc(
 fn kill_proc(pid: u32, signal: Signal) -> Result<()> {
     // convert 1234 to -1234 to kill grand-children too (requires process group 0)
     // let pid = -(pid as i32);
-    signal::kill(Pid::from_raw(pid as i32), signal).context("failed to send signal")?;
+    signal::kill(Pid::from_raw(pid.cast_signed()), signal).context("failed to send signal")?;
     Ok(())
 }
 
 fn kill_procs(pids: &[Pid], signal: Signal) -> Result<()> {
     for pid in pids {
-        kill_proc(pid.as_raw() as u32, signal).context("failed to kill proc")?;
+        kill_proc(pid.as_raw().cast_unsigned(), signal).context("failed to kill proc")?;
     }
     Ok(())
 }
@@ -162,24 +162,20 @@ fn get_proc_parts(stat_content: &str) -> Result<Vec<&str>> {
 /// Reads the Parent Process ID (PPID) from /proc/[pid]/stat.
 /// Returns -1 on failure to parse or find.
 fn get_proc_ppid(pid: Pid) -> Pid {
-    let stat_path = format!("{PROC_PATH}/{pid}/stat");
+    // In /proc/[pid]/stat (see https://www.kernel.org/doc/html/latest/filesystems/proc.html)
+    // Field 3 is 'state'. Field 4 is 'ppid'.
+    const PPID_FIELD_INDEX_IN_PARTS_AFTER_TCOMM: usize = 4 - 3;
 
-    let stat_content = match fs::read_to_string(stat_path) {
-        Ok(content) => content,
-        Err(_) => return Pid::from_raw(-1),
-    };
+    let stat_path = format!("{PROC_PATH}/{pid}/stat");
+    let Ok(stat_content) = fs::read_to_string(stat_path) else { return Pid::from_raw(-1) };
 
     let parts = get_proc_parts(&stat_content);
     // simply return invalid pid
     if parts.is_err() {
         return Pid::from_raw(-1);
     }
+
     let parts = parts.unwrap();
-
-    // In /proc/[pid]/stat (see https://www.kernel.org/doc/html/latest/filesystems/proc.html)
-    // Field 3 is 'state'. Field 4 is 'ppid'.
-    const PPID_FIELD_INDEX_IN_PARTS_AFTER_TCOMM: usize = 4 - 3;
-
     if parts.len() > PPID_FIELD_INDEX_IN_PARTS_AFTER_TCOMM {
         let ppid_str = parts[PPID_FIELD_INDEX_IN_PARTS_AFTER_TCOMM];
         if ppid_str.chars().all(|c| c.is_ascii_digit()) {
@@ -199,9 +195,13 @@ fn get_proc_ppid(pid: Pid) -> Pid {
 /// The runtime is calculated as:
 /// `system_uptime - (process_starttime_ticks / CLK_TCK)`
 fn get_proc_runtime_secs(pid: Pid) -> Result<u64> {
+    // In /proc/[pid]/stat (see https://www.kernel.org/doc/html/latest/filesystems/proc.html)
+    // Field 3 is 'state'. Field 22 is 'start_time'.
+    const STARTTIME_FIELD_INDEX_IN_PARTS_AFTER_TCOMM: usize = 22 - 3;
+
     // 1. Get CLK_TCK (clock ticks per second)
     let clk_tck = match sysconf(SysconfVar::CLK_TCK)? {
-        Some(val) if val > 0 => val as u64,
+        Some(val) if val > 0 => val.cast_unsigned(),
         // fallback to 100
         Some(_) | None => 100,
     };
@@ -219,11 +219,6 @@ fn get_proc_runtime_secs(pid: Pid) -> Result<u64> {
 
     // 4. Parse start_time (field 22) from stat_content
     let parts = get_proc_parts(&stat_content)?;
-
-    // In /proc/[pid]/stat (see https://www.kernel.org/doc/html/latest/filesystems/proc.html)
-    // Field 3 is 'state'. Field 22 is 'start_time'.
-    const STARTTIME_FIELD_INDEX_IN_PARTS_AFTER_TCOMM: usize = 22 - 3;
-
     if parts.len() <= STARTTIME_FIELD_INDEX_IN_PARTS_AFTER_TCOMM {
         anyhow::bail!(
             "Not enough fields after (comm) in stat file {} to find starttime (field 22). Found \
@@ -430,7 +425,7 @@ where
                         sleep.as_mut().reset(Instant::now() + timeout);
 
                         // check if children match test case, and kill if they do
-                        proc_children_checker(Pid::from_raw(pid as i32), timeout, validator).context("failed to check children")?;
+                        proc_children_checker(Pid::from_raw(pid.cast_signed()), timeout, validator).context("failed to check children")?;
                         continue;
                     }
                     kill_proc(pid, Signal::SIGTERM).context("failed to kill proc")?;
