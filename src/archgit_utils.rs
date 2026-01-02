@@ -35,6 +35,13 @@ fn convert_archrepo_url(orig_url: &str) -> String {
     }
 }
 
+/// Clones a git repository, applying Arch Linux URL normalization.
+///
+/// # Errors
+///
+/// * The repository URL is invalid or unreachable.
+/// * The `repo_path` is not accessible or not empty.
+/// * The underlying git clone operation fails.
 pub fn git_repo_clone<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_depth: Option<i32>,
@@ -54,6 +61,12 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     )
 }
 
+/// Clones a git repository and checks out a specific tag, applying Arch Linux URL normalization.
+///
+/// # Errors
+///
+/// * The clone operation fails.
+/// * The specified tag does not exist.
 pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_tag: &str,
@@ -65,6 +78,13 @@ pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     git_utils::git_repo_clone_tag(&repo_url_str, repo_tag, repo_path, single_branch, proxy_url)
 }
 
+/// Pulls changes for the current (or specified) branch from a remote.
+///
+/// # Errors
+///
+/// * The `repo_path` is not a valid git repository.
+/// * The remote cannot be contacted.
+/// * There are merge conflicts that cannot be resolved automatically.
 pub fn git_repo_pull<PathLike: AsRef<Path>>(
     repo_path: PathLike,
     remote_name: Option<&str>,
@@ -74,6 +94,12 @@ pub fn git_repo_pull<PathLike: AsRef<Path>>(
     git_utils::git_repo_pull(repo_path, remote_name, remote_branch, proxy_url)
 }
 
+/// Pulls changes from the remote and checks out a specific tag.
+///
+/// # Errors
+///
+/// * The fetch or merge operations fail.
+/// * The specified `remote_tag` cannot be checked out.
 pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
     repo_path: PathLike,
     remote_name: Option<&str>,
