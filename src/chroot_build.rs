@@ -17,10 +17,13 @@
 use crate::subproc::ChildrenCheckValidator;
 use crate::{archgit_utils, subproc};
 
+use std::io::Cursor;
 use std::path::Path;
 use std::{env, fs, path};
 
 use anyhow::{Context, Result};
+use tokio::io::AsyncWrite;
+use tokio::runtime::Runtime;
 use tokio::time::Duration;
 use tracing::{debug, error};
 
@@ -171,6 +174,48 @@ fn construct_buildpkgcmd_args(build_params: &BuildParams) -> Vec<String> {
     args
 }
 
+/// @brief Builds a package within a chroot environment asynchronously.
+///
+/// This function executes `makechrootpkg` to build a package specified by the given PKGBUILD path
+/// within a chroot environment. It utilizes `sudo` to run the build command with appropriate
+/// environment variables and arguments.
+///
+/// # Errors
+///
+/// * The subprocess fails to spawn (e.g., `sudo` is missing).
+/// * There is an I/O error writing to `log_writer`.
+/// * The underlying process execution encounters a system error.
+///
+/// # Panics
+///
+/// If the parent directory of `pkgbuild_path` cannot be converted to a UTF-8 string.
+pub async fn build_package_async<W>(
+    build_params: &BuildParams,
+    mut log_writer: W,
+    validator: Option<ChildrenCheckValidator>,
+) -> Result<bool>
+where
+    W: AsyncWrite + Unpin + Send,
+{
+    let args = construct_buildpkgcmd_args(build_params);
+    debug!("running build := '{args:?}'");
+
+    // Run build
+    let pkgbuild_parent =
+        Path::new(&build_params.pkgbuild_path).parent().unwrap_or(Path::new("/")).to_str().unwrap();
+    debug!("Running in '{pkgbuild_parent}'...");
+
+    subproc::exec_proc_async_ext(
+        "sudo",
+        &args,
+        pkgbuild_parent,
+        &mut log_writer,
+        build_params.timeout,
+        validator,
+    )
+    .await
+}
+
 /// @brief Builds a package within a chroot environment.
 ///
 /// This function executes `makechrootpkg` to build a package specified by the given PKGBUILD path
@@ -180,25 +225,19 @@ pub fn build_package(
     build_params: BuildParams,
     validator: Option<ChildrenCheckValidator>,
 ) -> BuildResult {
-    let args = construct_buildpkgcmd_args(&build_params);
-    debug!("running build := '{args:?}'");
+    let mut log_buffer = Vec::new();
 
-    // Run build
-    let pkgbuild_parent =
-        Path::new(&build_params.pkgbuild_path).parent().unwrap_or(Path::new("/")).to_str().unwrap();
-    debug!("Running in '{pkgbuild_parent}'...");
+    // NOTE: hackish solution to handle Error in single place
+    let res = || -> Result<bool> {
+        let cursor = Cursor::new(&mut log_buffer);
 
-    let mut log: Vec<u8> = vec![];
-    let res = subproc::exec_proc(
-        "sudo",
-        &args,
-        pkgbuild_parent,
-        &mut log,
-        build_params.timeout,
-        validator,
-    );
+        let rt = Runtime::new().context("Failed to initialize tokio runtime")?;
+        rt.block_on(async move {
+            return build_package_async(&build_params, cursor, validator).await;
+        })
+    }();
 
-    let build_log = String::from_utf8_lossy(&log).to_string();
+    let build_log = String::from_utf8_lossy(&log_buffer).to_string();
     if let Err(err) = &res {
         error!("Failed to run build with error: {err:?}");
     }
@@ -235,8 +274,8 @@ pub fn build_package(
 /// inside the chroot to configure package manager settings, including repositories and cache
 /// locations.
 ///
-/// @param `build_paccachedir` An optional path to a custom pacman cache directory on the host system.
-/// If provided, this directory will be used as a shared package cache for `pacman` within
+/// @param `build_paccachedir` An optional path to a custom pacman cache directory on the host
+/// system. If provided, this directory will be used as a shared package cache for `pacman` within
 /// the chroot. This can speed up operations by reusing downloaded packages. If not provided,
 /// `pacman` will use its default cache directory within the chroot, which is separate from
 /// the host system's cache.
