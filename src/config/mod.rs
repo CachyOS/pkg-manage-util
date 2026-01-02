@@ -28,8 +28,8 @@ pub struct Config {
     chroot_dir: Option<PathBuf>,
     makepkgconf_path: Option<PathBuf>,
     pacmanconf_path: Option<PathBuf>,
-    build_config: Option<build::BuildConfig>,
-    git_config: Option<git::GitConfig>,
+    build: Option<build::BuildConfig>,
+    git: Option<git::GitConfig>,
 }
 
 impl Config {
@@ -64,7 +64,7 @@ impl Config {
     }
 
     pub fn gpg_key(&self) -> Option<String> {
-        self.build_config.as_ref().and_then(build::BuildConfig::gpg_key)
+        self.build.as_ref().and_then(build::BuildConfig::gpg_key)
     }
 
     pub fn makepkgconf_path(&self) -> PathBuf {
@@ -80,15 +80,15 @@ impl Config {
     }
 
     pub fn build_paccachedir(&self) -> Option<PathBuf> {
-        self.build_config.as_ref().and_then(build::BuildConfig::build_paccachedir)
+        self.build.as_ref().and_then(build::BuildConfig::build_paccachedir)
     }
 
     pub fn timeout(&self) -> Option<u64> {
-        self.build_config.as_ref().and_then(build::BuildConfig::timeout)
+        self.build.as_ref().and_then(build::BuildConfig::timeout)
     }
 
     pub fn proxy_url(&self) -> Option<String> {
-        self.git_config.as_ref().and_then(git::GitConfig::proxy_url).clone()
+        self.git.as_ref().and_then(git::GitConfig::proxy_url).clone()
     }
 
     pub fn dump_config(&self) -> Result<String> {
@@ -96,8 +96,8 @@ impl Config {
             chroot_dir: Some(self.chroot_dir()),
             makepkgconf_path: Some(self.makepkgconf_path()),
             pacmanconf_path: Some(self.pacmanconf_path()),
-            build_config: self.build_config.as_ref().map(build::BuildConfig::actual_config),
-            git_config: self.git_config.as_ref().map(git::GitConfig::actual_config),
+            build: self.build.as_ref().map(build::BuildConfig::actual_config),
+            git: self.git.as_ref().map(git::GitConfig::actual_config),
         };
         let toml_content = toml::to_string(&actual_config)?;
         Ok(toml_content)
