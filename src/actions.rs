@@ -79,6 +79,7 @@ pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
         timeout: timeout.map(Duration::from_secs),
     };
 
+    // NOTE: hackish solution to handle Error in single place
     let mut stdout = tokio::io::stdout();
     let result = || -> Result<bool> {
         let rt = Runtime::new().context("Failed to initialize tokio runtime")?;
