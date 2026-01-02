@@ -176,7 +176,7 @@ fn construct_buildpkgcmd_args(build_params: &BuildParams) -> Vec<String> {
 
 /// @brief Builds a package within a chroot environment asynchronously.
 ///
-/// This function executes `makechrootpkg` to build a package specified by the given PKGBUILD path
+/// Executes `makechrootpkg` to build a package specified by the given PKGBUILD path
 /// within a chroot environment. It utilizes `sudo` to run the build command with appropriate
 /// environment variables and arguments.
 ///
@@ -218,7 +218,7 @@ where
 
 /// @brief Builds a package within a chroot environment.
 ///
-/// This function executes `makechrootpkg` to build a package specified by the given PKGBUILD path
+/// Executes `makechrootpkg` to build a package specified by the given PKGBUILD path
 /// within a chroot environment. It utilizes `sudo` to run the build command with appropriate
 /// environment variables and arguments.
 pub fn build_package(
@@ -248,7 +248,7 @@ pub fn build_package(
 
 /// @brief Sets up a chroot environment for building packages.
 ///
-/// This function initializes or updates a chroot environment located within `chroot_parent`.
+/// Initializes or updates a chroot environment located within `chroot_parent`.
 /// If the chroot directory (named "root" inside `chroot_parent`) does not exist, it will be created
 /// using `mkarchroot`. This involves installing a minimal Arch Linux base system along with
 /// essential build tools like `base-devel`. The `pacman.conf` and
@@ -349,7 +349,7 @@ pub fn setup_chroot(
 
 /// @brief Fetches Arch Linux package source files using Git.
 ///
-/// This function clones or updates the official Arch Linux packaging Git repository
+/// Clones or updates the official Arch Linux packaging Git repository
 /// for the specified package base from gitlab.archlinux.org. It then checks out
 /// the specific version by `tagver`.
 ///
@@ -405,8 +405,7 @@ pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
 
 /// @brief Clean the chroot directory.
 ///
-/// This function cleans up the chroot directory by
-/// removing temporary files and directories.
+/// Cleans up the chroot directory by removing temporary files and directories.
 ///
 /// @param `chroot_dir` The path to chroot.
 ///
