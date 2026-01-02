@@ -31,12 +31,12 @@ use anyhow::{Context, Result};
 /// If the provided `filepath` contains non-UTF-8 characters.
 pub fn create_detached_signature<PathLike: AsRef<Path>>(
     filepath: PathLike,
-    sign_key: Option<String>,
+    sign_key: Option<&String>,
 ) -> Result<()> {
     // construct args for gpg
     let mut gpg_args: Vec<&str> = vec!["--batch", "--detach-sign"];
 
-    if let Some(sign_key) = &sign_key {
+    if let Some(sign_key) = sign_key {
         gpg_args.extend_from_slice(&["-u", sign_key]);
     }
     gpg_args.push(filepath.as_ref().to_str().unwrap());
