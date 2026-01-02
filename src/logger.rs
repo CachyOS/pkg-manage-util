@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Vladislav Nepogodin
+// Copyright (C) 2025-2026 Vladislav Nepogodin
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,11 +25,8 @@ pub fn init_logger() {
     let subscriber_env_filter = env_filter.unwrap_or_else(|_| EnvFilter::new("info"));
 
     // create stdout layer
-    let stdout_log = tracing_subscriber::fmt::layer()
-        .with_target(false)
-        .without_time()
-        .compact()
-        .with_writer(std::io::stdout);
+    let stdout_log =
+        tracing_subscriber::fmt::layer().without_time().compact().with_writer(std::io::stdout);
 
-    tracing_subscriber::registry().with(stdout_log).with(subscriber_env_filter).init()
+    tracing_subscriber::registry().with(stdout_log).with(subscriber_env_filter).init();
 }
