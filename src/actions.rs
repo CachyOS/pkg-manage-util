@@ -107,7 +107,7 @@ pub fn clone_arch_repo(config: &Config, args: &ArchCloneCli) -> Result<()> {
         &args.pkgbase,
         args.version.as_deref().unwrap_or("main"),
         &dest_path,
-        config.proxy_url(),
+        config.proxy_url().as_deref(),
     )?;
 
     Ok(())
@@ -117,17 +117,17 @@ pub fn clone_aur_repo(config: &Config, args: &AurCloneCli) -> Result<()> {
     let current_dir = env::current_dir().context("failed to get current dir")?;
     let dest_path = current_dir.join(&args.pkgbase);
 
-    aur::clone_repo(&args.pkgbase, dest_path, args.depth, config.proxy_url())
+    aur::clone_repo(&args.pkgbase, dest_path, args.depth, config.proxy_url().as_deref())
 }
 
 pub fn clone_git_repo(config: &Config, args: &GitCloneCli) -> Result<()> {
     git_utils::git_repo_clone(
         &args.git_url,
         args.depth,
-        args.branch.clone(),
+        args.branch.as_deref(),
         &args.dest_path,
         args.single_branch,
-        config.proxy_url(),
+        config.proxy_url().as_deref(),
     )?;
 
     Ok(())

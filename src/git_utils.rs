@@ -38,16 +38,16 @@ struct State {
 }
 
 #[cfg(debug_assertions)]
-fn print(state: &mut State) {
-    let stats = state.progress.as_ref().unwrap();
+fn print_state(op_state: &mut State) {
+    let stats = op_state.progress.as_ref().unwrap();
     let network_pct = (100 * stats.received_objects()) / stats.total_objects();
     let index_pct = (100 * stats.indexed_objects()) / stats.total_objects();
-    let co_pct = if state.total > 0 { (100 * state.current) / state.total } else { 0 };
+    let co_pct = if op_state.total > 0 { (100 * op_state.current) / op_state.total } else { 0 };
     let kbytes = stats.received_bytes() / 1024;
     if stats.received_objects() == stats.total_objects() {
-        if !state.newline {
+        if !op_state.newline {
             println!();
-            state.newline = true;
+            op_state.newline = true;
         }
         print!("Resolving deltas {}/{}\r", stats.indexed_deltas(), stats.total_deltas());
     } else {
@@ -62,9 +62,9 @@ fn print(state: &mut State) {
             stats.indexed_objects(),
             stats.total_objects(),
             co_pct,
-            state.current,
-            state.total,
-            state.path.as_ref().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
+            op_state.current,
+            op_state.total,
+            op_state.path.as_ref().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
         );
     }
     io::stdout().flush().unwrap();
@@ -193,10 +193,10 @@ fn normal_merge(
 fn do_merge<'a>(
     repo: &'a Repository,
     remote_branch: &str,
-    fetch_commit: git2::AnnotatedCommit<'a>,
+    fetch_commit: &git2::AnnotatedCommit<'a>,
 ) -> Result<(), git2::Error> {
     // 1. do a merge analysis
-    let analysis = repo.merge_analysis(&[&fetch_commit])?;
+    let analysis = repo.merge_analysis(&[fetch_commit])?;
 
     // 2. Do the appropriate merge
     if analysis.0.is_fast_forward() {
@@ -206,7 +206,7 @@ fn do_merge<'a>(
         // do a fast forward
         let refname = format!("refs/heads/{remote_branch}");
         if let Ok(mut r) = repo.find_reference(&refname) {
-            fast_forward(repo, &mut r, &fetch_commit)?;
+            fast_forward(repo, &mut r, fetch_commit)?;
         } else {
             // The branch doesn't exist so just set the reference to the
             // commit directly. Usually this is because you are pulling
@@ -228,7 +228,7 @@ fn do_merge<'a>(
     } else if analysis.0.is_normal() {
         // do a normal merge
         let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
-        normal_merge(repo, &head_commit, &fetch_commit)?;
+        normal_merge(repo, &head_commit, fetch_commit)?;
     } else {
         #[cfg(debug_assertions)]
         println!("Nothing to do...");
@@ -239,10 +239,10 @@ fn do_merge<'a>(
 pub fn git_repo_clone<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_depth: Option<i32>,
-    repo_branch: Option<String>,
+    repo_branch: Option<&str>,
     repo_path: PathLike,
     single_branch: bool,
-    proxy_url: Option<String>,
+    proxy_url: Option<&str>,
 ) -> Result<()> {
     #[cfg(debug_assertions)]
     let state =
@@ -254,7 +254,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     cb.transfer_progress(|stats| {
         let mut state = state.borrow_mut();
         state.progress = Some(stats.to_owned());
-        print(&mut state);
+        print_state(&mut state);
         true
     });
 
@@ -266,7 +266,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
         state.path = path.map(std::path::Path::to_path_buf);
         state.current = cur;
         state.total = total;
-        print(&mut state);
+        print_state(&mut state);
     });
 
     let mut fo = FetchOptions::new();
@@ -277,7 +277,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
 
     let mut po = ProxyOptions::new();
     if let Some(proxy_url) = proxy_url {
-        po.url(&proxy_url);
+        po.url(proxy_url);
     }
     fo.proxy_options(po);
 
@@ -290,7 +290,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
 
     // TODO(vnepogodin): add proxy on the 429 code
     if let Some(repo_branch) = repo_branch {
-        repo_builder.branch(&repo_branch);
+        repo_builder.branch(repo_branch);
 
         if single_branch {
             let refspec = format!("+refs/heads/{0:}:refs/remotes/origin/{0:}", &repo_branch);
@@ -310,7 +310,7 @@ pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     repo_tag: &str,
     repo_path: PathLike,
     single_branch: bool,
-    proxy_url: Option<String>,
+    proxy_url: Option<&str>,
 ) -> Result<()> {
     git_repo_clone(repo_url, None, None, repo_path.as_ref(), single_branch, proxy_url)?;
     git_repo_checkout(repo_path, repo_tag)?;
@@ -320,9 +320,9 @@ pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
 
 pub fn git_repo_pull<PathLike: AsRef<Path>>(
     repo_path: PathLike,
-    remote_name: Option<String>,
-    remote_branch: Option<String>,
-    proxy_url: Option<String>,
+    remote_name: Option<&str>,
+    remote_branch: Option<&str>,
+    proxy_url: Option<&str>,
 ) -> Result<()> {
     let remote_name = remote_name.as_ref().map_or("origin", |s| &s[..]);
 
@@ -331,14 +331,14 @@ pub fn git_repo_pull<PathLike: AsRef<Path>>(
     let mut was_none_branch = true;
     let remote_branch = if let Some(remote_branch) = remote_branch {
         was_none_branch = false;
-        remote_branch.clone()
+        remote_branch.to_owned()
     } else {
         let head = repo.head()?;
         head.shorthand().unwrap().to_owned()
     };
 
-    let fetch_commit = do_fetch(&repo, &[&remote_branch], &mut remote, proxy_url.as_deref())?;
-    do_merge(&repo, &remote_branch, fetch_commit)?;
+    let fetch_commit = do_fetch(&repo, &[&remote_branch], &mut remote, proxy_url)?;
+    do_merge(&repo, &remote_branch, &fetch_commit)?;
 
     // NOTE: Do we need it here??
     if was_none_branch {
@@ -350,22 +350,22 @@ pub fn git_repo_pull<PathLike: AsRef<Path>>(
 
 pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
     repo_path: PathLike,
-    remote_name: Option<String>,
+    remote_name: Option<&str>,
     remote_tag: &str,
-    proxy_url: Option<String>,
+    proxy_url: Option<&str>,
 ) -> Result<()> {
     let remote_name = remote_name.as_ref().map_or("origin", |s| &s[..]);
 
     let repo = Repository::open(repo_path.as_ref())?;
     let mut remote = repo.find_remote(remote_name)?;
 
-    let fetch_commit = do_fetch(&repo, &[], &mut remote, proxy_url.as_deref())?;
+    let fetch_commit = do_fetch(&repo, &[], &mut remote, proxy_url)?;
 
     let remote_branch = {
         let head = repo.head()?;
         head.shorthand().unwrap().to_owned()
     };
-    do_merge(&repo, &remote_branch, fetch_commit)?;
+    do_merge(&repo, &remote_branch, &fetch_commit)?;
 
     git_repo_checkout(repo_path, remote_tag)?;
 

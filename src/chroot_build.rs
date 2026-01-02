@@ -366,7 +366,7 @@ pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
     pkgbase: &str,
     tagver: &str,
     dest_path: PathLike,
-    proxy_url: Option<String>,
+    proxy_url: Option<&str>,
 ) -> Result<bool> {
     // make sure the dest path is absolute
     let dest_path = path::absolute(dest_path).context("failed to absolutize dest path")?;
