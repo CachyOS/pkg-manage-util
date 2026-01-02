@@ -236,6 +236,14 @@ fn do_merge<'a>(
     Ok(())
 }
 
+/// Clones a git repository from `repo_url` to `repo_path`.
+///
+/// # Errors
+///
+/// * The `repo_url` is invalid or unreachable.
+/// * The `repo_path` exists and is not empty.
+/// * Authentication fails or network issues occur.
+/// * The underlying git operations (fetch, checkout) fail.
 pub fn git_repo_clone<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_depth: Option<i32>,
@@ -305,6 +313,12 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     Ok(())
 }
 
+/// Clones a git repository and checks out a specific tag.
+///
+/// # Errors
+///
+/// * The clone operation fails (see [`git_repo_clone`]).
+/// * The specified `repo_tag` does not exist or cannot be checked out.
 pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     repo_url: &str,
     repo_tag: &str,
@@ -318,6 +332,17 @@ pub fn git_repo_clone_tag<PathLike: AsRef<Path>>(
     Ok(())
 }
 
+/// Pulls changes from the configured remote (default "origin") for the current or specified branch.
+///
+/// # Errors
+///
+/// * The directory at `repo_path` is not a valid git repository.
+/// * The remote cannot be found or accessed.
+/// * Fetching or merging changes fails.
+///
+/// # Panics
+///
+/// If the current HEAD branch name contains invalid UTF-8 characters.
 pub fn git_repo_pull<PathLike: AsRef<Path>>(
     repo_path: PathLike,
     remote_name: Option<&str>,
@@ -348,6 +373,17 @@ pub fn git_repo_pull<PathLike: AsRef<Path>>(
     Ok(())
 }
 
+/// Pulls changes and then checks out a specific tag.
+///
+/// # Errors
+///
+/// * The directory at `repo_path` is not a valid git repository.
+/// * The fetch or merge operations fail.
+/// * The specified `remote_tag` cannot be checked out.
+///
+/// # Panics
+///
+/// If the current HEAD branch name contains invalid UTF-8 characters.
 pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
     repo_path: PathLike,
     remote_name: Option<&str>,
@@ -372,6 +408,13 @@ pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
     Ok(())
 }
 
+/// Checks out the specified git reference (branch, tag, or commit) in a detached HEAD state.
+///
+/// # Errors
+///
+/// * The directory at `repo_path` is not a valid git repository.
+/// * The `ref_name` cannot be resolved to a commit (e.g., it does not exist).
+/// * The checkout operation fails.
 pub fn git_repo_checkout<PathLike: AsRef<Path>>(repo_path: PathLike, ref_name: &str) -> Result<()> {
     let repo = Repository::open(repo_path)?;
     let refer = repo.resolve_reference_from_short_name(ref_name)?;
