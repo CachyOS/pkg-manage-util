@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Vladislav Nepogodin
+// Copyright (C) 2025-2026 Vladislav Nepogodin
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,17 @@ use tracing::error;
 /// AUR Github mirror. used in case of an accident
 const AUR_MIRROR_URL: &str = "https://github.com/archlinux/aur.git";
 
+/// Clones an AUR package repository.
+///
+/// This function attempts to clone the package source from the official Arch User Repository (AUR).
+/// If the primary clone fails (e.g. package not found or connection refused), it falls back to
+/// a GitHub mirror.
+///
+/// # Errors
+///
+/// * The `dest_path` already exists on the filesystem.
+/// * The primary clone attempt fails **and** the fallback clone attempt also fails.
+/// * The underlying git operations encounter network or I/O errors.
 pub fn clone_repo<PathLike: AsRef<Path>>(
     pkgbase: &str,
     dest_path: PathLike,
