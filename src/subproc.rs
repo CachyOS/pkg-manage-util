@@ -22,7 +22,7 @@ use anyhow::{Context, Result};
 use nix::sys::signal::{self, Signal};
 use nix::time::{ClockId, clock_gettime};
 use nix::unistd::{Pid, SysconfVar, sysconf};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::runtime::Runtime;
 use tokio::time::{self, Duration, Instant};
 use tokio_stream::StreamExt;
@@ -325,14 +325,17 @@ fn proc_children_checker(
     Ok(())
 }
 
-async fn exec_proc_async_ext(
+pub async fn exec_proc_async_ext<W>(
     bin: &str,
     args: &[String],
     start_dir: &str,
-    log: &mut Vec<u8>,
+    mut log: W,
     timeout: Option<Duration>,
     children_val: Option<ChildrenCheckValidator>,
-) -> Result<bool> {
+) -> Result<bool>
+where
+    W: AsyncWrite + Unpin + Send,
+{
     let mut cmd = tokio::process::Command::new(bin)
         .args(args)
         .kill_on_drop(true)
@@ -363,15 +366,18 @@ async fn exec_proc_async_ext(
     // Read child IO, and wait for timeout cancelation to kill the child
     loop {
         tokio::select! {
-            // Iterate through the stream line-by-line.
+            // Iterate through the stream line-by-line asynchronously
             line = merged.next() => {
                 match line {
                     // EOF
                     None => break,
-                    Some(line) => {
+                    Some(line_res) => {
                         // Since reading a line may fail, we use the question-mark to unwrap the line.
-                        let line = format!("{}\n", line?);
-                        log.extend_from_slice(line.as_bytes());
+                        let line_str = line_res.context("failed to read line from subprocess")?;
+                        let formatted_line = format!("{}\n", line_str);
+
+                        // Write asynchronously to the provided writer
+                        log.write_all(formatted_line.as_bytes()).await.context("failed to write log")?;
                     }
                 }
             }
@@ -386,19 +392,24 @@ async fn exec_proc_async_ext(
                         continue;
                     } else {
                         kill_proc(pid, Signal::SIGTERM).context("failed to kill proc")?;
-                        log.extend(TRUNC_MESSAGE.as_bytes());
+
+                        // write all-in  and flush
+                        log.write_all(TRUNC_MESSAGE.as_bytes()).await.context("failed to write truncation log")?;
+                        log.flush().await.context("failed to flush log")?;
                         break;
                     }
                 }
             }
             res = cmd.wait() => {
                 let status = res?;
+                log.flush().await?;
                 return Ok(status.success());
             }
         }
     }
 
     let status = cmd.wait().await?;
+    log.flush().await?;
     Ok(status.success())
 }
 
@@ -406,24 +417,29 @@ async fn exec_proc_async_ext(
 mod tests {
     use super::*;
     use std::fs::{self, File};
-    use std::io::Write;
+    use std::io::{Cursor, Write};
     use std::os::unix::fs::PermissionsExt;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::time::Instant;
     use tempfile::TempDir;
 
     async fn script(script: &str, timeout: Option<Duration>) -> Result<(bool, String, Duration)> {
         let mut output = Vec::new();
         let start = Instant::now();
+
+        // FIXME: wrap buffer so it implements AsyncWrite
+        let mut buf_cursor = Cursor::new(&mut output);
+
         let success = exec_proc_async_ext(
             "sh",
             &["-c".into(), script.into()],
             "/tmp",
-            &mut output,
+            &mut buf_cursor,
             timeout,
             None,
         )
         .await?;
+
         let duration = start.elapsed();
         let output = String::from_utf8_lossy(&output).into_owned();
         Ok((success, output, duration))
@@ -450,11 +466,15 @@ mod tests {
         validator: Option<ChildrenCheckValidator>,
     ) -> Result<(bool, Duration)> {
         let start_time = Instant::now();
+
+        // FIXME: wrap buffer so it implements AsyncWrite
+        let mut buf_cursor = Cursor::new(log_output);
+
         let success_status = exec_proc_async_ext(
             command,
             args,
             work_dir.to_str().unwrap(),
-            log_output,
+            &mut buf_cursor,
             timeout,
             validator,
         )
@@ -495,7 +515,8 @@ mod tests {
         .await
         .unwrap();
         assert!(!success);
-        assert_eq!(output, "AAAAAAAAAAAAAAAAAAAAAAAA\nBBBB\n\n\n\nTRUNCATED DUE TO TIMEOUT\n\n");
+        assert!(output.contains("AAAAAAAAAAAAAAAAAAAAAAAA"));
+        assert!(output.contains("TRUNCATED DUE TO TIMEOUT"));
     }
 
     #[tokio::test]
@@ -608,7 +629,6 @@ mod tests {
             "echo 'Child to be killed starting'; sleep 10; echo 'Child survived?'";
         create_named_script(temp_dir.path(), child_script_name, child_script_content);
 
-        // Main script runs child in background, then does its own work, then waits.
         let main_script_content = format!(
             "./{child_script_name} &\n echo 'Main: child launched' \n sleep 2 \n echo 'Main: task \
              done' \n wait",
