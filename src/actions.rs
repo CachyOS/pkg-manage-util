@@ -23,6 +23,7 @@ use std::env;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
+use tokio::runtime::Runtime;
 use uuid::Uuid;
 
 pub fn dump_config(config: &Config) -> Result<()> {
@@ -78,16 +79,21 @@ pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
         timeout: timeout.map(Duration::from_secs),
     };
 
-    let result = chroot_build::build_package(build_params, None);
+    let mut stdout = tokio::io::stdout();
+    let result = || -> Result<bool> {
+        let rt = Runtime::new().context("Failed to initialize tokio runtime")?;
+        rt.block_on(async move {
+            return chroot_build::build_package_async(&build_params, &mut stdout, None).await;
+        })
+    }();
 
     // cleanup temp chroot
     chroot_build::clean_chroot_dir(chroot_dir.to_str().unwrap());
 
-    println!("Build log:\n{}", result.build_log);
-    if result.success {
-        println!("Build successful!");
-    } else {
-        println!("Build failed!");
+    match result {
+        Ok(true) => println!("Build successful!"),
+        Ok(false) => println!("Build failed!"),
+        Err(err) => println!("Build failed: {err:?}"),
     }
 
     Ok(())
