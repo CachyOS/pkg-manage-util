@@ -39,6 +39,21 @@ pub struct ExecStatus {
     pub output: String,
 }
 
+/// Executes a command synchronously and captures its output.
+///
+/// Runs the specified binary with arguments, optionally in a specific
+/// working directory. It captures *either* stdout *or* stderr based on the `is_stderr` flag.
+///
+/// # Errors
+///
+/// * The current working directory cannot be retrieved (if `work_dir` is `None`).
+/// * The command fails to spawn (e.g., binary not found, permission denied).
+/// * Waiting for the command to complete or reading its output fails.
+///
+/// # Panics
+///
+/// If the `work_dir` is `None` and the current working directory path contains non-UTF-8
+/// characters.
 pub fn exec_cmd(
     bin: &str,
     args: &[String],
@@ -78,6 +93,15 @@ pub fn exec_cmd(
     Ok(ExecStatus { exit_code, output })
 }
 
+/// Executes a subprocess synchronously, capturing output to a vector.
+///
+/// This is a synchronous wrapper around [`exec_proc_async_ext`]. It creates a temporary
+/// Tokio runtime to execute the command.
+///
+/// # Errors
+///
+/// * The Tokio runtime cannot be initialized.
+/// * The underlying asynchronous process execution fails (spawn error, IO error, etc.).
 pub fn exec_proc(
     bin: &str,
     args: &[String],
@@ -325,6 +349,24 @@ fn proc_children_checker(
     Ok(())
 }
 
+/// Executes a subprocess asynchronously, capturing output to a writer.
+///
+/// Spawns the specified binary, merges its stdout and stderr, and streams
+/// the output to the provided `log` writer. It enforces a timeout and optionally validates
+/// child processes.
+///
+/// # Errors
+///
+/// * The subprocess fails to spawn (e.g., binary not found, permissions issues).
+/// * Reading from the subprocess stdout/stderr streams fails.
+/// * Writing to the provided `log` writer fails.
+/// * Killing the process (on timeout) or checking its children fails.
+/// * Waiting for the process exit status fails.
+///
+/// # Panics
+///
+/// If the spawned child process does not have a captured stdout or stderr handle,
+/// even though `Stdio::piped()` is requested.
 pub async fn exec_proc_async_ext<W>(
     bin: &str,
     args: &[String],
