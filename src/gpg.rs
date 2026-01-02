@@ -19,6 +19,16 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
 
+/// Creates a detached GPG signature for the specified file.
+///
+/// # Errors
+///
+/// * The `gpg` binary cannot be found or executed.
+/// * The `gpg` command returns a failure exit code (indicating signing failed).
+///
+/// # Panics
+///
+/// If the provided `filepath` contains non-UTF-8 characters.
 pub fn create_detached_signature<PathLike: AsRef<Path>>(
     filepath: PathLike,
     sign_key: Option<String>,
@@ -46,6 +56,19 @@ pub fn create_detached_signature<PathLike: AsRef<Path>>(
     Ok(())
 }
 
+/// Verifies the GPG signature for a specific file.
+///
+/// Assumes the signature file is located at `filepath + ".sig"`.
+///
+/// # Errors
+///
+/// * The `gpg` binary cannot be found or executed.
+/// * The signature verification fails (exit code 1 or 2).
+/// * The `gpg` process terminates unexpectedly.
+///
+/// # Panics
+///
+/// If the provided `filepath` contains non-UTF-8 characters.
 pub fn verify_gpg_signature<PathLike: AsRef<Path>>(filepath: PathLike, name: &str) -> Result<()> {
     let filepath = filepath.as_ref().to_str().unwrap();
     let gpg_sign = format!("{filepath}.sig");
@@ -66,6 +89,13 @@ pub fn verify_gpg_signature<PathLike: AsRef<Path>>(filepath: PathLike, name: &st
     anyhow::bail!("[{name}] signature check failed: {stderr}");
 }
 
+/// Imports a list of PGP keys from the Ubuntu keyserver.
+///
+/// # Errors
+///
+/// * The `gpg` binary cannot be found or executed.
+/// * The key import process fails (non-zero exit code), potentially due to network issues or
+///   invalid keys.
 pub fn import_pgp_keys(pgpkeys: &[String]) -> Result<()> {
     if pgpkeys.is_empty() {
         return Ok(());
