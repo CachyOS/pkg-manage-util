@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Vladislav Nepogodin
+// Copyright (C) 2025-2026 Vladislav Nepogodin
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ pub struct BuildResult {
     pub build_log: String,
 }
 
-/// @brief Struct to encapsulate parameters for chroot operations.
+/// Struct to encapsulate parameters for chroot operations.
 ///
 /// This structure bundles together common parameters needed when working with chroot environments,
 /// such as paths to configuration files and the chroot root directory itself. It is used to
@@ -174,7 +174,7 @@ fn construct_buildpkgcmd_args(build_params: &BuildParams) -> Vec<String> {
     args
 }
 
-/// @brief Builds a package within a chroot environment asynchronously.
+/// Builds a package within a chroot environment asynchronously.
 ///
 /// Executes `makechrootpkg` to build a package specified by the given PKGBUILD path
 /// within a chroot environment. It utilizes `sudo` to run the build command with appropriate
@@ -216,7 +216,7 @@ where
     .await
 }
 
-/// @brief Builds a package within a chroot environment.
+/// Builds a package within a chroot environment.
 ///
 /// Executes `makechrootpkg` to build a package specified by the given PKGBUILD path
 /// within a chroot environment. It utilizes `sudo` to run the build command with appropriate
@@ -246,7 +246,7 @@ pub fn build_package(
     BuildResult { success, build_log }
 }
 
-/// @brief Sets up a chroot environment for building packages.
+/// Sets up a chroot environment for building packages.
 ///
 /// Initializes or updates a chroot environment located within `chroot_parent`.
 /// If the chroot directory (named "root" inside `chroot_parent`) does not exist, it will be created
@@ -288,6 +288,13 @@ pub fn build_package(
 ///         - Insufficient permissions to create directories or copy files.
 ///         - Errors during the execution of `mkarchroot` or `arch-nspawn`.
 ///         - Invalid paths provided for configuration files or the chroot parent directory.
+///
+/// # Errors
+///
+/// * Creating directories (for the chroot parent or package cache) fails (e.g., permission denied).
+/// * The `mkarchroot` command fails (exit code non-zero).
+/// * Copying configuration files (`cp` via sudo) fails.
+/// * The `arch-nspawn` command fails during update.
 pub fn setup_chroot(
     chroot_parent: &str,
     makepkgconf_path: &str,
@@ -347,7 +354,7 @@ pub fn setup_chroot(
     Ok(())
 }
 
-/// @brief Fetches Arch Linux package source files using Git.
+/// Fetches Arch Linux package source files using Git.
 ///
 /// Clones or updates the official Arch Linux packaging Git repository
 /// for the specified package base from gitlab.archlinux.org. It then checks out
@@ -362,6 +369,17 @@ pub fn setup_chroot(
 /// @param `dest_path` The local filesystem path where the Git repository should be cloned.
 ///
 /// @return True if the Git operations were successful, false otherwise.
+///
+/// # Errors
+///
+/// * The `dest_path` cannot be resolved to an absolute path.
+/// * The current working directory cannot be determined or matches `dest_path`.
+/// * The `git` clone operation fails (network issues, permissions).
+/// * The `git checkout` command fails or returns a non-zero exit code.
+///
+/// # Panics
+///
+/// If the `dest_path` contains characters that are not valid UTF-8.
 pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
     pkgbase: &str,
     tagver: &str,
@@ -403,8 +421,6 @@ pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
     Ok(true)
 }
 
-/// @brief Clean the chroot directory.
-///
 /// Cleans up the chroot directory by removing temporary files and directories.
 ///
 /// @param `chroot_dir` The path to chroot.
