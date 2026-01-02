@@ -29,7 +29,7 @@ fn convert_archrepo_url(orig_url: &str) -> String {
         // 1. if there is only one occurrence, replace it with '-'.
         // 2. if there are more than one occurrence, replace them with 'plus'.
         // arch gitlab config seems to convert '+' to 'plus' in urls.
-        orig_url.replace("+", if occurrences > 1 { "plus" } else { "-" })
+        orig_url.replace('+', if occurrences > 1 { "plus" } else { "-" })
     } else {
         orig_url.to_owned()
     }

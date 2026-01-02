@@ -64,7 +64,7 @@ impl Config {
     }
 
     pub fn gpg_key(&self) -> Option<String> {
-        self.build_config.as_ref().and_then(|x| x.gpg_key())
+        self.build_config.as_ref().and_then(build::BuildConfig::gpg_key)
     }
 
     pub fn makepkgconf_path(&self) -> PathBuf {
@@ -80,15 +80,15 @@ impl Config {
     }
 
     pub fn build_paccachedir(&self) -> Option<PathBuf> {
-        self.build_config.as_ref().and_then(|x| x.build_paccachedir())
+        self.build_config.as_ref().and_then(build::BuildConfig::build_paccachedir)
     }
 
     pub fn timeout(&self) -> Option<u64> {
-        self.build_config.as_ref().and_then(|x| x.timeout())
+        self.build_config.as_ref().and_then(build::BuildConfig::timeout)
     }
 
     pub fn proxy_url(&self) -> Option<String> {
-        self.git_config.as_ref().and_then(|x| x.proxy_url()).clone()
+        self.git_config.as_ref().and_then(git::GitConfig::proxy_url).clone()
     }
 
     pub fn dump_config(&self) -> Result<String> {
@@ -96,8 +96,8 @@ impl Config {
             chroot_dir: Some(self.chroot_dir()),
             makepkgconf_path: Some(self.makepkgconf_path()),
             pacmanconf_path: Some(self.pacmanconf_path()),
-            build_config: self.build_config.as_ref().map(|x| x.actual_config()),
-            git_config: self.git_config.as_ref().map(|x| x.actual_config()),
+            build_config: self.build_config.as_ref().map(build::BuildConfig::actual_config),
+            git_config: self.git_config.as_ref().map(git::GitConfig::actual_config),
         };
         let toml_content = toml::to_string(&actual_config)?;
         Ok(toml_content)

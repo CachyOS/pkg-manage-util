@@ -27,7 +27,7 @@ pub fn create_detached_signature<PathLike: AsRef<Path>>(
     let mut gpg_args: Vec<&str> = vec!["--batch", "--detach-sign"];
 
     if let Some(sign_key) = &sign_key {
-        gpg_args.extend_from_slice(&["-u", &sign_key]);
+        gpg_args.extend_from_slice(&["-u", sign_key]);
     }
     gpg_args.push(filepath.as_ref().to_str().unwrap());
 

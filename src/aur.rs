@@ -37,7 +37,7 @@ pub fn clone_repo<PathLike: AsRef<Path>>(
 
     let git_url = format!("https://aur.archlinux.org/{pkgbase}.git");
     let res =
-        git_utils::git_repo_clone(&git_url, repo_depth, None, &dest_path, false, proxy_url.clone());
+        git_utils::git_repo_clone(&git_url, repo_depth, None, dest_path, false, proxy_url.clone());
 
     // fallback to AUR Github mirror
     if let Err(clone_err) = res {
@@ -54,7 +54,7 @@ pub fn clone_repo<PathLike: AsRef<Path>>(
         AUR_MIRROR_URL,
         None,
         Some(pkgbase.into()),
-        &dest_path,
+        dest_path,
         true,
         proxy_url.clone(),
     )?;

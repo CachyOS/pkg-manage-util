@@ -221,21 +221,21 @@ pub fn build_package(
 /// `pacman -Syuu` inside the chroot using `arch-nspawn`. This ensures that the packages within the
 /// chroot are up to date.
 ///
-/// @param chroot_parent The path to the parent directory where the chroot will be created.
+/// @param `chroot_parent` The path to the parent directory where the chroot will be created.
 ///        The chroot root directory itself will be created as a subdirectory named "root" within
 /// this parent directory(e.g., if `chroot_parent` is "/path/to/chroots", the chroot root
 /// will be at "/path/to/chroots/root").
 ///
-/// @param makepkgconf_path The path to the `makepkg.conf` file on the host system that should be
+/// @param `makepkgconf_path` The path to the `makepkg.conf` file on the host system that should be
 /// copied into the chroot environment. This configuration file will be used by `makepkg`
 /// inside the chroot to define build settings.
 ///
-/// @param pacmanconf_path The path to the `pacman.conf` file on the host system that should be
+/// @param `pacmanconf_path` The path to the `pacman.conf` file on the host system that should be
 /// copied into the chroot environment. This configuration file will be used by `pacman`
 /// inside the chroot to configure package manager settings, including repositories and cache
 /// locations.
 ///
-/// @param build_paccachedir An optional path to a custom pacman cache directory on the host system.
+/// @param `build_paccachedir` An optional path to a custom pacman cache directory on the host system.
 /// If provided, this directory will be used as a shared package cache for `pacman` within
 /// the chroot. This can speed up operations by reusing downloaded packages. If not provided,
 /// `pacman` will use its default cache directory within the chroot, which is separate from
@@ -320,7 +320,7 @@ pub fn setup_chroot(
 /// @param tagver The Git tag identifying the specific package version source to
 /// retrieve.
 ///
-/// @param dest_path The local filesystem path where the Git repository should be cloned.
+/// @param `dest_path` The local filesystem path where the Git repository should be cloned.
 ///
 /// @return True if the Git operations were successful, false otherwise.
 pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
@@ -369,7 +369,7 @@ pub fn fetch_archpkgbuild<PathLike: AsRef<Path>>(
 /// This function cleans up the chroot directory by
 /// removing temporary files and directories.
 ///
-/// @param chroot_dir The path to chroot.
+/// @param `chroot_dir` The path to chroot.
 ///
 /// @return True if the cleaning was successful, false otherwise.
 pub fn clean_chroot_dir(chroot_dir: &str) -> bool {

@@ -65,7 +65,7 @@ fn print(state: &mut State) {
             state.current,
             state.total,
             state.path.as_ref().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
-        )
+        );
     }
     io::stdout().flush().unwrap();
 }
@@ -205,29 +205,26 @@ fn do_merge<'a>(
 
         // do a fast forward
         let refname = format!("refs/heads/{remote_branch}");
-        match repo.find_reference(&refname) {
-            Ok(mut r) => {
-                fast_forward(repo, &mut r, &fetch_commit)?;
-            },
-            Err(_) => {
-                // The branch doesn't exist so just set the reference to the
-                // commit directly. Usually this is because you are pulling
-                // into an empty repository.
-                repo.reference(
-                    &refname,
-                    fetch_commit.id(),
-                    true,
-                    &format!("Setting {} to {}", remote_branch, fetch_commit.id()),
-                )?;
-                repo.set_head(&refname)?;
-                repo.checkout_head(Some(
-                    git2::build::CheckoutBuilder::default()
-                        .allow_conflicts(true)
-                        .conflict_style_merge(true)
-                        .force(),
-                ))?;
-            },
-        };
+        if let Ok(mut r) = repo.find_reference(&refname) {
+            fast_forward(repo, &mut r, &fetch_commit)?;
+        } else {
+            // The branch doesn't exist so just set the reference to the
+            // commit directly. Usually this is because you are pulling
+            // into an empty repository.
+            repo.reference(
+                &refname,
+                fetch_commit.id(),
+                true,
+                &format!("Setting {} to {}", remote_branch, fetch_commit.id()),
+            )?;
+            repo.set_head(&refname)?;
+            repo.checkout_head(Some(
+                git2::build::CheckoutBuilder::default()
+                    .allow_conflicts(true)
+                    .conflict_style_merge(true)
+                    .force(),
+            ))?;
+        }
     } else if analysis.0.is_normal() {
         // do a normal merge
         let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
@@ -266,7 +263,7 @@ pub fn git_repo_clone<PathLike: AsRef<Path>>(
     #[cfg(debug_assertions)]
     co.progress(|path, cur, total| {
         let mut state = state.borrow_mut();
-        state.path = path.map(|p| p.to_path_buf());
+        state.path = path.map(std::path::Path::to_path_buf);
         state.current = cur;
         state.total = total;
         print(&mut state);
@@ -327,7 +324,7 @@ pub fn git_repo_pull<PathLike: AsRef<Path>>(
     remote_branch: Option<String>,
     proxy_url: Option<String>,
 ) -> Result<()> {
-    let remote_name = remote_name.as_ref().map(|s| &s[..]).unwrap_or("origin");
+    let remote_name = remote_name.as_ref().map_or("origin", |s| &s[..]);
 
     let repo = Repository::open(repo_path.as_ref())?;
     let mut remote = repo.find_remote(remote_name)?;
@@ -357,7 +354,7 @@ pub fn git_repo_pull_tag<PathLike: AsRef<Path>>(
     remote_tag: &str,
     proxy_url: Option<String>,
 ) -> Result<()> {
-    let remote_name = remote_name.as_ref().map(|s| &s[..]).unwrap_or("origin");
+    let remote_name = remote_name.as_ref().map_or("origin", |s| &s[..]);
 
     let repo = Repository::open(repo_path.as_ref())?;
     let mut remote = repo.find_remote(remote_name)?;

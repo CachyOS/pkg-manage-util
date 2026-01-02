@@ -19,7 +19,7 @@ mod args;
 mod config;
 mod logger;
 
-use args::*;
+use args::{Cli, Commands};
 use config::Config;
 
 use anyhow::Result;

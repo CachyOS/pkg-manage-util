@@ -374,14 +374,14 @@ where
                     Some(line_res) => {
                         // Since reading a line may fail, we use the question-mark to unwrap the line.
                         let line_str = line_res.context("failed to read line from subprocess")?;
-                        let formatted_line = format!("{}\n", line_str);
+                        let formatted_line = format!("{line_str}\n");
 
                         // Write asynchronously to the provided writer
                         log.write_all(formatted_line.as_bytes()).await.context("failed to write log")?;
                     }
                 }
             }
-            _ = &mut sleep => {
+            () = &mut sleep => {
                 if let Some(pid) = cmd.id() {
                     if let Some(validator) = children_val {
                         // reset timer
@@ -390,14 +390,13 @@ where
                         // check if children match test case, and kill if they do
                         proc_children_checker(Pid::from_raw(pid as i32), timeout, validator).context("failed to check children")?;
                         continue;
-                    } else {
-                        kill_proc(pid, Signal::SIGTERM).context("failed to kill proc")?;
-
-                        // write all-in  and flush
-                        log.write_all(TRUNC_MESSAGE.as_bytes()).await.context("failed to write truncation log")?;
-                        log.flush().await.context("failed to flush log")?;
-                        break;
                     }
+                    kill_proc(pid, Signal::SIGTERM).context("failed to kill proc")?;
+
+                    // write all-in  and flush
+                    log.write_all(TRUNC_MESSAGE.as_bytes()).await.context("failed to write truncation log")?;
+                    log.flush().await.context("failed to flush log")?;
+                    break;
                 }
             }
             res = cmd.wait() => {
