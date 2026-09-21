@@ -82,8 +82,8 @@ pub struct BuildParams {
     pub makepkgconf_path: String,
     /// The path to the parent directory of the makepkg.conf file (outside the chroot).
     pub makepkgconf_parent: String,
-    /// An optional flag to use the custom pacman cache directory in makechrootpkg.
-    pub makechrootpkg_flag: String,
+    /// Extra makechrootpkg flags.
+    pub makechrootpkg_flags: Vec<String>,
     /// TODO: add documentation
     pub timeout: Option<Duration>,
 }
@@ -137,11 +137,7 @@ fn construct_makechrootpkg_args(build_params: &BuildParams) -> Vec<String> {
         "-r".into(),
         build_params.chroot_parent.clone(),
     ];
-    if !build_params.makechrootpkg_flag.is_empty() {
-        let makechrootpkg_flag =
-            build_params.makechrootpkg_flag.strip_prefix("-P ").unwrap().to_owned();
-        args.extend_from_slice(&["-P".into(), makechrootpkg_flag]);
-    }
+    args.extend_from_slice(&build_params.makechrootpkg_flags);
     args.push("--".into());
     let makepkg_args: Vec<String> = vec![
         "--config".into(),

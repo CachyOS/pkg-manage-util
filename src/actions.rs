@@ -75,7 +75,7 @@ pub fn build_pkg(config: &Config, args: &BuildCli) -> Result<()> {
         chroot_parent: chroot_dir.to_str().unwrap().to_string(),
         makepkgconf_path: makepkgconf_path.to_str().unwrap().to_string(),
         makepkgconf_parent: makepkgconf_path.parent().unwrap().to_str().unwrap().to_string(),
-        makechrootpkg_flag: String::new(),
+        makechrootpkg_flags: Vec::new(),
         timeout: timeout.map(Duration::from_secs),
     };
 
