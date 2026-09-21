@@ -151,7 +151,6 @@ fn construct_makechrootpkg_args(build_params: &BuildParams) -> Vec<String> {
         "--syncdeps".into(),
         "--noconfirm".into(),
         "--holdver".into(),
-        "--skipinteg".into(),
         "--skippgpcheck".into(),
         "--clean".into(),
         "--cleanbuild".into(),
